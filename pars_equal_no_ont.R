@@ -39,5 +39,5 @@ mu_plot_no_ontogeny <- ggplot(data = final_no_ont, aes(x = mu)) +
         plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")
   )
 
-median(final_no_ont$mu, na.rm = T)
-sd(final_no_ont$mu, na.rm = T)
+no_ont_pars_equal_median <- median(final_no_ont$mu, na.rm = T)
+no_ont_pars_equal_sd <- sd(final_no_ont$mu, na.rm = T)
