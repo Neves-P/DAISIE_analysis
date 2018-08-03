@@ -19,16 +19,17 @@ no_ontogeny_CS_df <- data.frame()
 for (i in 1:11) {
   no_ontogeny_CS_df <- rbind(no_ontogeny_CS_df, do.call(rbind.data.frame, get(paste0("no_ontogeny_CS_pars_equal_ML_", i))))
 }
-
+nrow(no_ontogeny_CS_df)
+nrow(unique(no_ontogeny_CS_df))
 final_no_ont <- na.omit(no_ontogeny_CS_df)
 final_no_ont <- final_no_ont[is.finite(final_no_ont$lambda_c) &
                             is.finite(final_no_ont$lambda_a) & is.finite(final_no_ont$mu) & 
                             is.finite(final_no_ont$K) & is.finite(final_no_ont$gamma),]
-
-
+nrow(final_no_ont)
+head(final_no_ont)
 #### MU ####
 tail(final_no_ont$mu)
-mu_plot_no_ontogeny <- ggplot(data = final_no_ont, aes(x = mu)) + 
+mu_plot_no_ontogeny <- ggplot(data = final_no_ont, aes(x = final_no_ont$mu)) + 
   geom_histogram(fill = "deepskyblue") +
   geom_vline(xintercept = 2.2, color = "orange2", size = 1.2) +
   ggtitle("Estimates of µ \nwithout island ontogeny") +
