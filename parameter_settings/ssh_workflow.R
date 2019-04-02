@@ -304,3 +304,56 @@ execute_next_setup <- function(
     ))
   rm(connection); gc()
 }
+
+#' @title Check jobs on cluster
+#' @author Giovanni Laudanno
+#' @description Check jobs on cluster
+#' @inheritParams default_params_doc
+#' @return nothing
+check_jobs <- function(account = get_p_number()) {
+  
+  # connection
+  
+  cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
+  if (!require(ssh)) {install.packages("ssh")}
+  connection <- ssh_connect(cluster_address)
+  
+  ssh_exec_wait(session = connection, command = "squeue -u $USER --long")
+  ssh_exec_wait(session = connection, command = "sshare -u $USER")
+  rm(connection); gc()
+  return()
+}
+
+#' @title Download the results to the results folder of the project
+#' @author Giovanni Laudanno
+#' @description Download the results to the results folder of the project
+#' @inheritParams default_params_doc
+#' @return nothing
+download_results <- function(
+  project_name = get_project_name()
+) {
+  
+  project_folder <- get_project_folder(project_name)
+  remote_results_folder <- file.path(get_project_name(), "results")
+  local_results_folder <- file.path(project_folder, "results")
+  testit::assert(dir.exists(local_results_folder))
+  
+  # download files
+  if (!require(ssh)) {install.packages("ssh")}
+  accounts <- get_p_number()
+  for (account in accounts) {
+    cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
+    connection <- ssh_connect(cluster_address)
+    
+    system.time(
+      scp_download(
+        session = connection,
+        files = paste0(remote_results_folder, "/*"),
+        to = local_results_folder
+      )
+    )
+    rm(connection); gc()
+  }
+  return()
+}
+
