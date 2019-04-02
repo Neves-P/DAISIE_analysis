@@ -298,7 +298,7 @@ execute_next_setup <- function(
       " ",
       right_setup$laa,
       " ",
-      seed,
+      right_setup$replicates,
       " ",
       partition
     ))
