@@ -187,14 +187,20 @@ upload_cluster_scripts <- function(
 #' @inheritParams default_params_doc
 #' @return Experiment setups
 experiment_setup <- function() {
-  time <- c(2, 3, 5)
+  time <- c(2, 3, 6)
   M <- 1000
-  lac <- c(1)
-  mu <- c(0.5)
-  K <- c(20)
-  gam <- c(0.009)
+  lac <- c(7.48223*10^-6, 0.0000224467, 0.0000748223)
+  mu <- c(1)
+  K <- c(100 / 13500, 30 / 13500, 10 / 13500)
+  gam <- c(0.001)
   laa <- c(1)
-  replicates <- 20
+  replicates <- 1000
+  mu_min <- 0.1
+  mu_max <- mu_min + mu_min * .1
+  Amax <- c(13500)
+  Apeak <- c(0.1)
+  Asharpness <- c(1)
+  Atotalage <- c(9)
   setups <- expand.grid(
     time,
     M,
@@ -203,7 +209,13 @@ experiment_setup <- function() {
     K,
     gam,
     laa,
-    replicates
+    replicates,
+    mu_min,
+    mu_max,
+    Amax,
+    Apeak,
+    Asharpness,
+    Atotalage
   )
   colnames(setups) <- c(
     "time",
@@ -213,7 +225,13 @@ experiment_setup <- function() {
     "K",
     "gam",
     "laa",
-    "replicates"
+    "replicates",
+    "mu_min",
+    "mu_max",
+    "Amax",
+    "Apeak",
+    "Asharpness",
+    "Atotalage"
   )
   setups
 }
@@ -247,7 +265,7 @@ execute_next_setup <- function(
   upload_cluster_scripts(project_name = project_name)
 
  right_setup <- experiment_setup()[1,]
-
+ print(right_setup)
 
   if (is.null(project_folder)) {
     if (.Platform$OS.type == "windows") {
@@ -278,29 +296,26 @@ execute_next_setup <- function(
   )
   ssh_exec_wait(session = connection, command = paste0("cat ", bash_file))
   seed <- 1
-    ssh_exec_wait(session = connection, command = paste0(
+    ssh_exec_wait(session = connection, command = paste(
       "sbatch ",
       bash_file,
-      " ",
       seed,
-      " ",
       right_setup$time,
-      " ",
       right_setup$M,
-      " ",
       right_setup$lac,
-      " ",
       right_setup$mu,
-      " ",
       right_setup$K,
-      " ",
       right_setup$gam,
-      " ",
       right_setup$laa,
-      " ",
       right_setup$replicates,
-      " ",
-      partition
+      right_setup$mu_min,
+      right_setup$mu_max,
+      right_setup$Amax,
+      right_setup$Apeak,
+      right_setup$Asharpness,
+      right_setup$Atotalage,
+      partition,
+      sep = " "
     ))
   rm(connection); gc()
 }
@@ -311,16 +326,16 @@ execute_next_setup <- function(
 #' @inheritParams default_params_doc
 #' @return nothing
 check_jobs <- function(account = get_p_number()) {
-  
+
   # connection
-  
+
   cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
   if (!require(ssh)) {install.packages("ssh")}
   connection <- ssh_connect(cluster_address)
-  
+
   ssh_exec_wait(session = connection, command = "squeue -u $USER --long")
   ssh_exec_wait(session = connection, command = "sshare -u $USER")
-  rm(connection); gc()
+  invisible(ssh_disconnect(connection)); gc()
   return()
 }
 
@@ -332,19 +347,19 @@ check_jobs <- function(account = get_p_number()) {
 download_results <- function(
   project_name = get_project_name()
 ) {
-  
+
   project_folder <- get_project_folder(project_name)
   remote_results_folder <- file.path(get_project_name(), "results")
   local_results_folder <- file.path(project_folder, "results")
   testit::assert(dir.exists(local_results_folder))
-  
+
   # download files
   if (!require(ssh)) {install.packages("ssh")}
   accounts <- get_p_number()
   for (account in accounts) {
     cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
     connection <- ssh_connect(cluster_address)
-    
+
     system.time(
       scp_download(
         session = connection,

@@ -2,4 +2,4 @@
 devtools::install_github("rsetienne/DAISIE", ref = "develop")
 
 library(DAISIE)
-4Amax <-
+Amax <-
