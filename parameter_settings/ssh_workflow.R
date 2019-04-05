@@ -422,8 +422,7 @@ load_DAISIE_data <- function(envir) {
   files <- list.files(data_folder)
   for (file in seq_along(files)) {
     load(
-      file = file.path(local_data_folder, files[file]),
-      envir = envir
+      file = file.path(local_data_folder, files[file])
     )
     assign(paste0("sim_", file), out) #nolint
     assign(paste0("args_", file), args) #nolint
@@ -480,7 +479,11 @@ get_summary_stats <- function() {
     medians_indep_clades[dataset_id] <- median(n_indep_clade)
     medians_n_spec_island[dataset_id] <- median(n_spec_island)
   }
+
+
+
+
   return(list(medians_indep_clades, medians_n_spec_island))
 }
-
-get_summary_stats()[[2]][which(get_summary_stats()[[2]] > 10)]
+# DAISIE::DAISIE_calc_sumstats_pcrates()
+# get_summary_stats()[[2]][which(get_summary_stats()[[2]] > 10)]
