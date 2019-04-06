@@ -186,53 +186,78 @@ upload_cluster_scripts <- function(
 #' @description Experiment setups
 #' @inheritParams default_params_doc
 #' @return Experiment setups
-experiment_setup <- function() {
-  time <- c(2, 3, 6)
-  M <- 1000
-  lac <- c(7.48223*10^-6, 0.0000224467, 0.0000748223)
-  mu <- c(1)
-  K <- c(100 / 13500, 30 / 13500, 10 / 13500)
-  gam <- c(0.001)
-  laa <- c(1)
-  replicates <- 1000
-  mu_min <- 0.1
-  mu_max <- mu_min + mu_min * .1
-  Amax <- c(13500)
-  Apeak <- c(0.1)
-  Asharpness <- c(1)
-  Atotalage <- c(9)
-  setups <- expand.grid(
-    time,
-    M,
-    lac,
-    mu,
-    K,
-    gam,
-    laa,
-    replicates,
-    mu_min,
-    mu_max,
-    Amax,
-    Apeak,
-    Asharpness,
-    Atotalage
-  )
-  colnames(setups) <- c(
-    "time",
-    "M",
-    "lac",
-    "mu",
-    "K",
-    "gam",
-    "laa",
-    "replicates",
-    "mu_min",
-    "mu_max",
-    "Amax",
-    "Apeak",
-    "Asharpness",
-    "Atotalage"
-  )
+experiment_setup <- function(
+  time = c(2, 3, 6),
+  M = 1000,
+  lac = c(7.48223*10^-6, 0.0000224467, 0.0000748223),
+  mu = c(1),
+  K = c(100 / 13500, 30 / 13500, 10 / 13500),
+  gam = c(0.001),
+  laa = c(1),
+  island_ontogeny = "beta",
+  replicates = 1000,
+  mu_min = 0.1,
+  mu_max = mu_min + mu_min * .1,
+  Amax = c(13500),
+  Apeak = c(0.1),
+  Asharpness = c(1),
+  Atotalage = c(9)
+) {
+  if (island_ontogeny == "beta" || island_ontogeny == 2) {
+    setups <- expand.grid(
+      time,
+      M,
+      lac,
+      mu,
+      K,
+      gam,
+      laa,
+      replicates,
+      mu_min,
+      mu_max,
+      Amax,
+      Apeak,
+      Asharpness,
+      Atotalage
+    )
+    colnames(setups) <- c(
+      "time",
+      "M",
+      "lac",
+      "mu",
+      "K",
+      "gam",
+      "laa",
+      "replicates",
+      "mu_min",
+      "mu_max",
+      "Amax",
+      "Apeak",
+      "Asharpness",
+      "Atotalage"
+    )
+  } else {
+    setups <- expand.grid(
+      time,
+      M,
+      lac,
+      mu,
+      K,
+      gam,
+      laa,
+      replicates
+    )
+    colnames(setups) <- c(
+      "time",
+      "M",
+      "lac",
+      "mu",
+      "K",
+      "gam",
+      "laa",
+      "replicates"
+    )
+  }
   setups
 }
 
@@ -247,7 +272,23 @@ execute_next_setup <- function(
   max_sims = 1000,
   account = get_p_number(),
   download_files = TRUE,
-  partition = "gelifes"
+  partition = "gelifes",
+  time = c(2, 3, 6),
+  M = 1000,
+  lac = c(7.48223*10^-6, 0.0000224467, 0.0000748223),
+  mu = c(1),
+  K = c(100 / 13500, 30 / 13500, 10 / 13500),
+  gam = c(0.001),
+  laa = c(1),
+  island_ontogeny = "beta",
+  replicates = 1000,
+  mu_min = 0.1,
+  mu_max = mu_min + mu_min * .1,
+  Amax = c(13500),
+  Apeak = c(0.1),
+  Asharpness = c(1),
+  Atotalage = c(9),
+  branch = "@develop"
 ) {
 
   if (!(partition == "gelifes" || partition == "regular")) {
@@ -264,7 +305,23 @@ execute_next_setup <- function(
   # upload scripts
   upload_cluster_scripts(project_name = project_name)
 
- right_setup <- experiment_setup()
+  right_setup <- experiment_setup(
+    time = time,
+    M = M,
+    lac = lac,
+    mu = mu,
+    K = K,
+    gam = gam,
+    laa = laa,
+    island_ontogeny = island_ontogeny,
+    replicates = replicates,
+    mu_min = mu_min,
+    mu_max = mu_max,
+    Amax = Amax,
+    Apeak = Apeak,
+    Asharpness = Asharpness,
+    Atotalage = Atotalage
+  )
 
   if (is.null(project_folder)) {
     if (.Platform$OS.type == "windows") {
@@ -286,38 +343,76 @@ execute_next_setup <- function(
     "chmod +x ", file.path(project_name, "install_packages.bash")
   ))
   ssh_exec_wait(session = connection, command = paste0(
-    "./", file.path(project_name, "install_packages.bash")," 'rsetienne/", project_name,"@develop","'"
-  ))
-  ssh_exec_wait(session = connection, command = "sleep 5")
-  bash_file <- file.path(
+    "./", file.path(
+      project_name,
+      "install_packages.bash"),
+    " 'rsetienne/",
     project_name,
-    paste0(project_name, "_single_seed.bash")
-  )
-  ssh_exec_wait(session = connection, command = paste0("cat ", bash_file))
-  for (setup_number in seq_along(right_setup[,1])) {
-    seed <- 1
+    branch,
+    "'"
+  ))
+
+  if (island_ontogeny == "beta" || island_ontogeny == 2) {
     ssh_exec_wait(session = connection, command = "sleep 5")
-    ssh_exec_wait(session = connection, command = paste(
-      "sbatch ",
-      bash_file,
-      seed,
-      right_setup[setup_number,1],
-      right_setup[setup_number,2],
-      right_setup[setup_number,3],
-      right_setup[setup_number,4],
-      right_setup[setup_number,5],
-      right_setup[setup_number,6],
-      right_setup[setup_number,7],
-      right_setup[setup_number,8],
-      right_setup[setup_number,9],
-      right_setup[setup_number,10],
-      right_setup[setup_number,11],
-      right_setup[setup_number,12],
-      right_setup[setup_number,13],
-      right_setup[setup_number,14],
-      partition,
-      sep = " "
-    ))
+    bash_file <- file.path(
+      project_name,
+      paste0(project_name, "_single_seed.bash")
+    )
+  } else if (island_ontogeny == "const" || island_ontogeny == 0) {
+    ssh_exec_wait(session = connection, command = "sleep 5")
+    bash_file <- file.path(
+      project_name,
+      paste0(project_name, "_0_single_seed.bash")
+    )
+  }
+  ssh_exec_wait(session = connection, command = paste0("cat ", bash_file))
+
+  if (island_ontogeny == "beta") {
+    for (setup_number in seq_along(right_setup[,1])) {
+      seed <- 1
+      ssh_exec_wait(session = connection, command = "sleep 5")
+      ssh_exec_wait(session = connection, command = paste(
+        "sbatch ",
+        bash_file,
+        seed,
+        right_setup[setup_number,1],
+        right_setup[setup_number,2],
+        right_setup[setup_number,3],
+        right_setup[setup_number,4],
+        right_setup[setup_number,5],
+        right_setup[setup_number,6],
+        right_setup[setup_number,7],
+        right_setup[setup_number,8],
+        right_setup[setup_number,9],
+        right_setup[setup_number,10],
+        right_setup[setup_number,11],
+        right_setup[setup_number,12],
+        right_setup[setup_number,13],
+        right_setup[setup_number,14],
+        partition,
+        sep = " "
+      ))
+    }
+  } else {
+    for (setup_number in seq_along(right_setup[,1])) {
+      seed <- 1
+      ssh_exec_wait(session = connection, command = "sleep 5")
+      ssh_exec_wait(session = connection, command = paste(
+        "sbatch ",
+        bash_file,
+        seed,
+        right_setup[setup_number,1],
+        right_setup[setup_number,2],
+        right_setup[setup_number,3],
+        right_setup[setup_number,4],
+        right_setup[setup_number,5],
+        right_setup[setup_number,6],
+        right_setup[setup_number,7],
+        right_setup[setup_number,8],
+        partition,
+        sep = " "
+      ))
+    }
   }
   rm(connection); gc()
 }
