@@ -58,20 +58,21 @@ load_DAISIE_results <- function(sim_file_name) {
     assign(paste("result", file, sep = "_"), out_results) #nolint
     final_list <- rbind(final_list, do.call(rbind.data.frame, get(paste("result", file, sep = "_"))))
   }
+  return(final_list)
 }
 
 get_estimate_sumstats <- function(results) {
-  med_lambda_c <- median(final_list$lambda_c)
-  med_mu <- median(final_list$mu)
-  med_K <- median(final_list$K)
-  med_gamma <- median(final_list$gamma)
-  med_lambda_a <- median(final_list$lambda_a)
+  med_lambda_c <- median(results$lambda_c, na.rm = T)
+  med_mu <- median(results$mu, na.rm = T)
+  med_K <- median(results$K, na.rm = T)
+  med_gamma <- median(results$gamma, na.rm = T)
+  med_lambda_a <- median(results$lambda_a, na.rm = T)
 
-  mean_lambda_c <- mean(final_list$lambda_c)
-  mean_mu <- mean(final_list$mu)
-  mean_K <- mean(final_list$K)
-  mean_gamma <- mean(final_list$gamma)
-  mean_lambda_a <- mean(final_list$lambda_a)
+  mean_lambda_c <- mean(results$lambda_c, na.rm = T)
+  mean_mu <- mean(results$mu, na.rm = T)
+  mean_K <- mean(results$K, na.rm = T)
+  mean_gamma <- mean(results$gamma, na.rm = T)
+  mean_lambda_a <- mean(results$lambda_a, na.rm = T)
 
   out_list <- list(
     medians = c(

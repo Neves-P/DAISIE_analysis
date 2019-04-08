@@ -84,7 +84,7 @@ download_results <- function(
         to = local_results_folder
       )
     )
-    rm(connection); gc()
+    ssh_disconnect(connection); gc()
   }
   return()
 }
@@ -175,7 +175,7 @@ upload_cluster_scripts <- function(
         to = remote_project_folder
       )
     )
-    rm(connection); gc()
+    ssh_disconnect(connection); gc()
   }
   return()
 }
@@ -414,7 +414,7 @@ execute_next_setup <- function(
       ))
     }
   }
-  rm(connection); gc()
+  ssh_disconnect(connection); gc()
 }
 
 #' @title Check jobs on cluster
@@ -464,7 +464,7 @@ download_results <- function(
         to = local_results_folder
       )
     )
-    rm(connection); gc()
+    ssh_disconnect(connection); gc()
   }
   return()
 }
@@ -481,7 +481,7 @@ download_data <- function(
   project_folder <- get_project_folder(project_name)
   remote_data_folder <- file.path(get_project_name(), "data")
   local_data_folder <- file.path(project_folder, "data")
-  testit::assert(dir.exists(local_results_folder))
+  testit::assert(dir.exists(local_data_folder))
 
   # download files
   if (!require(ssh)) {install.packages("ssh")}
@@ -493,11 +493,11 @@ download_data <- function(
     system.time(
       scp_download(
         session = connection,
-        files = paste0(remote_results_folder, "/*"),
-        to = local_results_folder
+        files = paste0(remote_data_folder, "/*"),
+        to = local_data_folder
       )
     )
-    rm(connection); gc()
+    ssh_disconnect(connection); gc()
   }
   return()
 }
