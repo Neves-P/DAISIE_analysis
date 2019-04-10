@@ -33,18 +33,30 @@ DAISIE_calc_sumstats_pcrates(
   island_ontogeny = 2
 )
 
-load_DAISIE_results <- function(sim_file_name) {
-
-
+#' Title
+#'
+#' @param sim_file_name
+#'
+#' @return
+#' @export
+#'
+#' @examples
+load_DAISIE_results <- function(sim_file_name, ontogeny) {
   project_name <- get_project_name()
   project_folder <- get_project_folder(project_name)
   platform <- .Platform$OS.type
 
-  if (platform == "windows") {
-    results_folder <- local_data_folder <- file.path(project_folder, "results")
-    testit::assert(dir.exists(data_folder))
+  if (ontogeny) {
+    ont_path <- "ont"
   } else {
-    results_folder <- file.path(get_project_name(), "results")
+    ont_path <- "no_ont"
+  }
+
+  if (platform == "windows") {
+    results_folder <- local_data_folder <- file.path(project_folder, "results", ont_path)
+    testit::assert(dir.exists(results_folder))
+  } else {
+    results_folder <- file.path(get_project_name(), "results", ont_path)
   }
 
   result_files <- list.files(results_folder)
@@ -92,15 +104,3 @@ get_estimate_sumstats <- function(results) {
   )
   return(out_list)
 }
-
-
-ontogeny_CS_df <- data.frame()
-for (i in 1:11) {
-  ontogeny_CS_df <- rbind(ontogeny_CS_df, do.call(rbind.data.frame, get(paste0("ontogeny_CS_pars_equal_ML_", i))))
-}
-
-
-
-
-
-

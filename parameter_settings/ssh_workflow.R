@@ -430,7 +430,7 @@ check_jobs <- function(account = get_p_number()) {
   if (!require(ssh)) {install.packages("ssh")}
   connection <- ssh_connect(cluster_address)
 
-  ssh_exec_wait(session = connection, command = "squeue -u $USER --long")
+  jobs <- capture.output(ssh_exec_wait(session = connection, command = "squeue -u $USER --long"))
   ssh_exec_wait(session = connection, command = "sshare -u $USER")
   invisible(ssh_disconnect(connection)); gc()
   return()
@@ -502,7 +502,7 @@ download_data <- function(
   return()
 }
 
-load_DAISIE_data <- function(envir) {
+load_DAISIE_data <- function() {
   project_name <- get_project_name()
   project_folder <- get_project_folder(project_name)
   platform <- .Platform$OS.type
@@ -516,9 +516,7 @@ load_DAISIE_data <- function(envir) {
 
   files <- list.files(data_folder)
   for (file in seq_along(files)) {
-    load(
-      file = file.path(local_data_folder, files[file])
-    )
+    load(file = file.path(local_data_folder, files[file]))
     assign(paste0("sim_", file), out) #nolint
     assign(paste0("args_", file), args) #nolint
   }
@@ -560,25 +558,19 @@ get_summary_stats <- function() {
   for (dataset_id in seq_along(datasets)) {
     # Calc median of indep clades
     for (repl in seq_along(get(datasets[dataset_id]))) {
-      n_indep_clade[repl] <-
-        get(datasets[dataset_id])[[repl]][[1]]$stt_all[ # What this does
-          nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all), 5
-          ]
+      n_indep_clade[repl] <- # Count number of indep clades using last line
+        get(datasets[dataset_id])[[repl]][[1]]$stt_all[
+          nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all), 5]
     }
 
     # Calc median of number of species
     for (repl in seq_along(get(datasets[dataset_id]))) {
-      n_spec_island[repl] <- sum(get(datasets[dataset_id])[[repl]][[1]]$stt_all[ # What this does
+      n_spec_island[repl] <- sum(get(datasets[dataset_id])[[repl]][[1]]$stt_all[
         nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all),2:4])
     }
     medians_indep_clades[dataset_id] <- median(n_indep_clade)
     medians_n_spec_island[dataset_id] <- median(n_spec_island)
   }
-
-
-
-
   return(list(medians_indep_clades, medians_n_spec_island))
 }
-# DAISIE::DAISIE_calc_sumstats_pcrates()
-# get_summary_stats()[[2]][which(get_summary_stats()[[2]] > 10)]
+
