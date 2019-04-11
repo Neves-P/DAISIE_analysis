@@ -51,7 +51,9 @@ plot_violin <- function(ont_list,
                         statistic = "median",
                         log_transform = TRUE,
                         na_rm = TRUE,
-                        lambda_minus_mu = FALSE) {
+                        lambda_minus_mu = FALSE,
+                        export = FALSE,
+                        file_type = NA) {
   var_dataframe <- create_plotting_df(
     ont_list = ont_list,
     no_ont_list = no_ont_list,
@@ -77,11 +79,11 @@ plot_violin <- function(ont_list,
   if (!require(ggplot2)) {install.packages("ggplot2")}
 
   legend_name <- switch(var,
-                        "lambda_c" = "Cladogenesis rate",
-                        "mu" = "Extinction",
-                        "K" = "Carrying capacity",
-                        "gamma" = "Immigration rate",
-                        "lambda_a" = "Anagenesis rate"
+                        "lambda_c" = "cladogenesis rate",
+                        "mu" = "extinction",
+                        "K" = "carrying capacity",
+                        "gamma" = "immigration rate",
+                        "lambda_a" = "anagenesis rate"
   )
 
   if (var == "K" || var == "lambda_a") {
@@ -142,8 +144,8 @@ plot_violin <- function(ont_list,
     ggplot(data = var_dataframe, aes(x = ontogeny, y = var, fill = ontogeny)) +
       geom_violin(trim = FALSE) +
       scale_fill_manual(values = c("darkgreen", "red4")) +
-      ggtitle("DAISIE extinction rate estimates in ontogeny \nand null-ontogeny scenarios")  +
-      ylab(paste0(legend_name,  " (log transformed)")) +
+      ggtitle(paste0("DAISIE ", legend_name," estimates in ontogeny \nand null-ontogeny scenarios"))  +
+      ylab(if (log_transform) {paste0(legend_name,  " (log transformed)")} else {legend_name}) +
       xlab(element_blank()) +
       theme(
         axis.ticks.x = element_blank(),
@@ -179,8 +181,8 @@ plot_violin <- function(ont_list,
     ggplot(data = lambda_minus_mu_ont_df, aes(x = ontogeny, y = log(var), fill = ontogeny)) +
       geom_violin(trim = FALSE) +
       scale_fill_manual(values = c("darkgreen", "red4")) +
-      ggtitle("DAISIE extinction rate estimates in ontogeny \nand null-ontogeny scenarios")  +
-      ylab(paste0(legend_name, " estimates",  " (log transformed)")) +
+      ggtitle(paste0("DAISIE ", legend_name," estimates in ontogeny \nand null-ontogeny scenarios"))  +
+      ylab(if (log_transform) {paste0(legend_name,  " (log transformed)")} else {legend_name}) +
       xlab(element_blank()) +
       theme(
         axis.ticks.x = element_blank(),
@@ -197,6 +199,20 @@ plot_violin <- function(ont_list,
         color = "orange2", size = 1.1
       )
   }
-  # Export to pdf
-  # export::graph2ppt(height = 4, width = 4, file = "violin_plot_new2.ppt")
+
+
+  if (export) {
+
+    if (!require(export)) {install.packages("export")}
+
+    # Export to pdf
+    if (is.na(file_type)) {
+      is.na(file_type) = stop("File type not specified\n")
+    } else if (file_type == "ppt") {
+      "ppt" = export::graph2ppt(height = 4, width = 4, file = paste0("violin_plot_", var, ".ppt"))
+    } else if (file_type == "png") {
+      "png" = export::graph2png(height = 4, width = 4, file = paste0("violin_plot_", var, ".png"))
+    }
+  }
+  Sys.sleep(20)
 }
