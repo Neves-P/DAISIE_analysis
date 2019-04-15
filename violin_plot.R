@@ -33,11 +33,14 @@ create_plotting_df <- function(ont_list, no_ont_list, var, na_rm = TRUE) {
 #' @param ont_list
 #' @param no_ont_list
 #' @param var
-#' @param sumstats_0
-#' @param sumstats
 #' @param statistic
 #' @param log_transform
 #' @param na_rm
+#' @param ont_pars
+#' @param no_ont_pars
+#' @param lambda_minus_mu
+#' @param export
+#' @param file_type
 #'
 #' @return
 #' @export
@@ -74,7 +77,7 @@ plot_violin <- function(ont_list,
     Epars = c(ont_pars[10], ont_pars[11]),
     island_ontogeny = 2
   )
-  sumstats_0 <- get_estimate_sumstats(no_ont_list)
+  # sumstats_0 <- get_estimate_sumstats(no_ont_list)
 
   if (!require(ggplot2)) {install.packages("ggplot2")}
 
@@ -83,8 +86,7 @@ plot_violin <- function(ont_list,
                         "mu" = "extinction",
                         "K" = "carrying capacity",
                         "gamma" = "immigration rate",
-                        "lambda_a" = "anagenesis rate"
-  )
+                        "lambda_a" = "anagenesis rate")
 
   if (var == "K" || var == "lambda_a") {
     if (var == "K" && log_transform) {
@@ -119,9 +121,6 @@ plot_violin <- function(ont_list,
     }
   }
 
-
-
-
   if (var == "K" || var == "lambda_a") {
     hlines_df <- data.frame(
       ontogeny = c("island_ontogeny", "no_ontogeny"),
@@ -130,22 +129,33 @@ plot_violin <- function(ont_list,
         sumstat_0)
     )
   } else {
+    index <- switch(var,
+            "lambda_c" = 4,
+            "mu" = 5,
+            "K" = 6,
+            "gamma" = 7,
+            "lambda_a" = 8
+    )
     hlines_df <- data.frame(
       ontogeny = c("island_ontogeny", "no_ontogeny"),
       hline = c(
         sumstat[[paste0(prefix, var)]],
-        no_ont_pars[[5]])
+        no_ont_pars[[index]])
     )
   }
 
 
   if (!lambda_minus_mu) {
-
+    if (log_transform) {
+      legend <- paste0(legend_name,  " (log transformed)")
+    } else {
+      legend <- legend_name
+    }
     ggplot(data = var_dataframe, aes(x = ontogeny, y = var, fill = ontogeny)) +
       geom_violin(trim = FALSE) +
       scale_fill_manual(values = c("darkgreen", "red4")) +
       ggtitle(paste0("DAISIE ", legend_name," estimates in ontogeny \nand null-ontogeny scenarios"))  +
-      ylab(if (log_transform) {paste0(legend_name,  " (log transformed)")} else {legend_name}) +
+      ylab(legend) +
       xlab(element_blank()) +
       theme(
         axis.ticks.x = element_blank(),
@@ -200,9 +210,7 @@ plot_violin <- function(ont_list,
       )
   }
 
-
   if (export) {
-
     if (!require(export)) {install.packages("export")}
 
     # Export to pdf
@@ -214,5 +222,4 @@ plot_violin <- function(ont_list,
       "png" = export::graph2png(height = 4, width = 4, file = paste0("violin_plot_", var, ".png"))
     }
   }
-  Sys.sleep(20)
 }
