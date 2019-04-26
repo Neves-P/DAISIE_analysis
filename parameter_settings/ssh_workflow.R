@@ -433,7 +433,7 @@ check_jobs <- function(account = get_p_number()) {
   jobs <- capture.output(ssh_exec_wait(session = connection, command = "squeue -u $USER --long"))
   ssh_exec_wait(session = connection, command = "sshare -u $USER")
   invisible(ssh_disconnect(connection)); gc()
-  return()
+  invisible(jobs)
 }
 
 #' @title Download the results to the results folder of the project
