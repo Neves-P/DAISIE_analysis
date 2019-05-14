@@ -1,15 +1,18 @@
-#' Title
+#' Create data frame to use in plotting
 #'
-#' @param ont_list
-#' @param no_ont_list
-#' @param var
-#' @param na_rm
+#' @param ont_list List of ontogeny estimates
+#' @param no_ont_list List of null-ontogeny estimates
+#' @param var String with name of variable to plot
+#' @param na_rm Boolean to remove NAs. Default is \code{TRUE}
+#' @param type String stating if ontogeny and null-ontogeny plots or if only
+#' null-ontogeny resultsshould be plotted. Default is \code{"double"}, can be
+#' \code{"single"}
 #'
-#' @return
+#' @return Data frame with variables split by factors
+#'  island_ntogeny or no_ontogeny
 #' @export
-#'
-#' @examples
 create_plotting_df <- function(ont_list, no_ont_list = NULL, var, na_rm = TRUE, type = "double") {
+#' @examples
   if (type == "double") {
     if (na_rm) {
       ont_list <- na.omit(ont_list)

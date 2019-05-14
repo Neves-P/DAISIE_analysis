@@ -418,159 +418,176 @@ execute_next_setup <- function(
 }
 
 #' @title Check jobs on cluster
-#' @author Giovanni Laudanno
+#' @author Giovanni Laudanno, Pedro Neves
 #' @description Check jobs on cluster
 #' @inheritParams default_params_doc
-#' @return nothing
+#' @return list with job ids, job info and sshare
 check_jobs <- function(account = get_p_number()) {
 
   # connection
-
   cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
   if (!require(ssh)) {install.packages("ssh")}
   connection <- ssh_connect(cluster_address)
 
   jobs <- capture.output(ssh_exec_wait(session = connection, command = "squeue -u $USER --long"))
-  ssh_exec_wait(session = connection, command = "sshare -u $USER")
-  invisible(ssh_disconnect(connection)); gc()
-  invisible(jobs)
+
+  job_ids <- job_names <- c()
+  for (i in 3:(length(jobs) - 1)) {
+    job_id_i <- substr(jobs[i], start = 12, stop = 18)
+    job_ids <- c(job_ids, job_id_i)
+    job_info <- capture.output(ssh_exec_wait(
+      session = connection,
+      command = paste("jobinfo", job_id_i)
+    ))
+    job_name_i <- substr(job_info[1], start = 23, stop = nchar(job_info[1]))
+    job_names <- c(job_names, job_name_i)
+  }
+  sshare_output <- capture.output(ssh_exec_wait(
+    session = connection,
+    command = "sshare -u $USER"
+  ))
+
+  ssh_disconnect(connection); gc()
+  out <- list(jobs = jobs, job_ids = as.numeric(job_ids), sshare_output = sshare_output)
+  return(out)
 }
 
-#' @title Download the results to the results folder of the project
-#' @author Giovanni Laudanno
-#' @description Download the results to the results folder of the project
-#' @inheritParams default_params_doc
-#' @return nothing
-download_results <- function(
-  project_name = get_project_name()
-) {
 
-  project_folder <- get_project_folder(project_name)
-  remote_results_folder <- file.path(get_project_name(), "results")
-  local_results_folder <- file.path(project_folder, "results")
-  testit::assert(dir.exists(local_results_folder))
+  #' @title Download the results to the results folder of the project
+  #' @author Giovanni Laudanno
+  #' @description Download the results to the results folder of the project
+  #' @inheritParams default_params_doc
+  #' @return nothing
+  download_results <- function(
+    project_name = get_project_name()
+  ) {
 
-  # download files
-  if (!require(ssh)) {install.packages("ssh")}
-  accounts <- get_p_number()
-  for (account in accounts) {
-    cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
-    connection <- ssh_connect(cluster_address)
+    project_folder <- get_project_folder(project_name)
+    remote_results_folder <- file.path(get_project_name(), "results")
+    local_results_folder <- file.path(project_folder, "results")
+    testit::assert(dir.exists(local_results_folder))
 
-    system.time(
-      scp_download(
-        session = connection,
-        files = paste0(remote_results_folder, "/*"),
-        to = local_results_folder
+    # download files
+    if (!require(ssh)) {install.packages("ssh")}
+    accounts <- get_p_number()
+    for (account in accounts) {
+      cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
+      connection <- ssh_connect(cluster_address)
+
+      system.time(
+        scp_download(
+          session = connection,
+          files = paste0(remote_results_folder, "/*"),
+          to = local_results_folder
+        )
       )
-    )
-    ssh_disconnect(connection); gc()
+      ssh_disconnect(connection); gc()
+    }
+    return()
   }
-  return()
-}
 
-#' @title Download the data to the data folder of the project
-#' @author Giovanni Laudanno
-#' @description Download the data to the results folder of the project
-#' @inheritParams default_params_doc
-#' @return nothing
-download_data <- function(
-  project_name = get_project_name()
-) {
+  #' @title Download the data to the data folder of the project
+  #' @author Giovanni Laudanno
+  #' @description Download the data to the results folder of the project
+  #' @inheritParams default_params_doc
+  #' @return nothing
+  download_data <- function(
+    project_name = get_project_name()
+  ) {
 
-  project_folder <- get_project_folder(project_name)
-  remote_data_folder <- file.path(get_project_name(), "data")
-  local_data_folder <- file.path(project_folder, "data")
-  testit::assert(dir.exists(local_data_folder))
+    project_folder <- get_project_folder(project_name)
+    remote_data_folder <- file.path(get_project_name(), "data")
+    local_data_folder <- file.path(project_folder, "data")
+    testit::assert(dir.exists(local_data_folder))
 
-  # download files
-  if (!require(ssh)) {install.packages("ssh")}
-  accounts <- get_p_number()
-  for (account in accounts) {
-    cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
-    connection <- ssh_connect(cluster_address)
+    # download files
+    if (!require(ssh)) {install.packages("ssh")}
+    accounts <- get_p_number()
+    for (account in accounts) {
+      cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
+      connection <- ssh_connect(cluster_address)
 
-    system.time(
-      scp_download(
-        session = connection,
-        files = paste0(remote_data_folder, "/*"),
-        to = local_data_folder
+      system.time(
+        scp_download(
+          session = connection,
+          files = paste0(remote_data_folder, "/*"),
+          to = local_data_folder
+        )
       )
-    )
-    ssh_disconnect(connection); gc()
-  }
-  return()
-}
-
-load_DAISIE_data <- function() {
-  project_name <- get_project_name()
-  project_folder <- get_project_folder(project_name)
-  platform <- .Platform$OS.type
-
-  if (platform == "windows") {
-    data_folder <- local_data_folder <- file.path(project_folder, "data")
-    testit::assert(dir.exists(data_folder))
-  } else {
-    data_folder <- file.path(get_project_name(), "data")
+      ssh_disconnect(connection); gc()
+    }
+    return()
   }
 
-  files <- list.files(data_folder)
-  for (file in seq_along(files)) {
-    load(file = file.path(local_data_folder, files[file]))
-    assign(paste0("sim_", file), out) #nolint
-    assign(paste0("args_", file), args) #nolint
-  }
-}
+  load_DAISIE_data <- function() {
+    project_name <- get_project_name()
+    project_folder <- get_project_folder(project_name)
+    platform <- .Platform$OS.type
 
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-get_summary_stats <- function() {
-  project_name <- get_project_name()
-  project_folder <- get_project_folder(project_name)
-  platform <- .Platform$OS.type
+    if (platform == "windows") {
+      data_folder <- local_data_folder <- file.path(project_folder, "data")
+      testit::assert(dir.exists(data_folder))
+    } else {
+      data_folder <- file.path(get_project_name(), "data")
+    }
 
-  if (platform == "windows") {
-    data_folder <- local_data_folder <- file.path(project_folder, "data")
-    testit::assert(dir.exists(data_folder))
-  } else {
-    data_folder <- file.path(get_project_name(), "data")
+    files <- list.files(data_folder)
+    for (file in seq_along(files)) {
+      load(file = file.path(local_data_folder, files[file]))
+      assign(paste0("sim_", file), out) #nolint
+      assign(paste0("args_", file), args) #nolint
+    }
   }
 
-  files <- list.files(data_folder)
-  for (file in seq_along(files)) {
-    load(
-      file = file.path(local_data_folder, files[file])
-    )
-    assign(paste0("sim_", file), out) #nolint
-    assign(paste0("args_", file), args) #nolint
-  }
+  #' Calculate means and medians of parameter estimates
+  #'
+  #' @return list with median of indep clades
+  #' @export
+  #'
+  #' @examples
+  get_summary_stats <- function() {
+    project_name <- get_project_name()
+    project_folder <- get_project_folder(project_name)
+    platform <- .Platform$OS.type
 
-  # Calc median of indep clades
-  datasets <- ls(pattern = "sim")
-  n_indep_clade <- c()
-  medians_indep_clades <- c()
-  medians_n_spec_island <- c()
-  n_spec_island <- c()
-  for (dataset_id in seq_along(datasets)) {
+    if (platform == "windows") {
+      data_folder <- local_data_folder <- file.path(project_folder, "data")
+      testit::assert(dir.exists(data_folder))
+    } else {
+      data_folder <- file.path(get_project_name(), "data")
+    }
+
+    files <- list.files(data_folder)
+    for (file in seq_along(files)) {
+      load(
+        file = file.path(local_data_folder, files[file])
+      )
+      assign(paste0("sim_", file), out) #nolint
+      assign(paste0("args_", file), args) #nolint
+    }
+
     # Calc median of indep clades
-    for (repl in seq_along(get(datasets[dataset_id]))) {
-      n_indep_clade[repl] <- # Count number of indep clades using last line
-        get(datasets[dataset_id])[[repl]][[1]]$stt_all[
-          nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all), 5]
-    }
+    datasets <- ls(pattern = "sim")
+    n_indep_clade <- c()
+    medians_indep_clades <- c()
+    medians_n_spec_island <- c()
+    n_spec_island <- c()
+    for (dataset_id in seq_along(datasets)) {
+      # Calc median of indep clades
+      for (repl in seq_along(get(datasets[dataset_id]))) {
+        n_indep_clade[repl] <- # Count number of indep clades using last line
+          get(datasets[dataset_id])[[repl]][[1]]$stt_all[
+            nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all), 5]
+      }
 
-    # Calc median of number of species
-    for (repl in seq_along(get(datasets[dataset_id]))) {
-      n_spec_island[repl] <- sum(get(datasets[dataset_id])[[repl]][[1]]$stt_all[
-        nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all),2:4])
+      # Calc median of number of species
+      for (repl in seq_along(get(datasets[dataset_id]))) {
+        n_spec_island[repl] <- sum(get(datasets[dataset_id])[[repl]][[1]]$stt_all[
+          nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all),2:4])
+      }
+      medians_indep_clades[dataset_id] <- median(n_indep_clade)
+      medians_n_spec_island[dataset_id] <- median(n_spec_island)
     }
-    medians_indep_clades[dataset_id] <- median(n_indep_clade)
-    medians_n_spec_island[dataset_id] <- median(n_spec_island)
+    return(list(medians_indep_clades, medians_n_spec_island))
   }
-  return(list(medians_indep_clades, medians_n_spec_island))
-}
 
