@@ -36,8 +36,8 @@ vignettes/*.pdf
 rsconnect/
 .Rproj.user
 
-.pptx
-
-.png
-
-.rdata
+*.pptx
+*.svg
+*.png
+*.rdata
+*.Rproj
