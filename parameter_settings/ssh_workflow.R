@@ -263,7 +263,7 @@ experiment_setup <- function(
 
 
 #' @title Execute next setup
-#' @author Giovanni Laudanno
+#' @author Giovanni Laudanno, Pedro Neves
 #' @description Execute next setup
 #' @inheritParams default_params_doc
 #' @return nothing
@@ -288,6 +288,7 @@ execute_next_setup <- function(
   Apeak = c(0.1),
   Asharpness = c(1),
   Atotalage = c(9),
+  complete_analysis = FALSE,
   branch = "@develop"
 ) {
 
@@ -298,7 +299,7 @@ execute_next_setup <- function(
   project_folder <- get_project_folder(project_name)
 
   # download files
-  if (download_files == FALSE) {
+  if (download_files == TRUE) {
     download_results(project_name = project_name)
   }
 
@@ -335,6 +336,7 @@ execute_next_setup <- function(
     stop(paste0(project_folder, " is empty."))
   }
 
+  # Install packages
   cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
   if (!require(ssh)) {install.packages("ssh")}
   connection <- ssh_connect(cluster_address)
@@ -351,44 +353,42 @@ execute_next_setup <- function(
     branch,
     "'"
   ))
-
+  # Submit simulation jobs
   if (island_ontogeny == "beta" || island_ontogeny == 2) {
-    ssh_exec_wait(session = connection, command = "sleep 5")
-    bash_file <- file.path(
+    bash_file_sims <- file.path(
       project_name,
       paste0(project_name, "_single_seed.bash")
     )
   } else if (island_ontogeny == "const" || island_ontogeny == 0) {
-    ssh_exec_wait(session = connection, command = "sleep 5")
-    bash_file <- file.path(
+    bash_file_sims <- file.path(
       project_name,
       paste0(project_name, "_0_single_seed.bash")
     )
   }
-  ssh_exec_wait(session = connection, command = paste0("cat ", bash_file))
+  ssh_exec_wait(session = connection, command = paste0("cat ", bash_file_sims))
 
   if (island_ontogeny == "beta") {
-    for (setup_number in seq_along(right_setup[,1])) {
+    for (setup_number in seq_along(right_setup[, 1])) {
       seed <- 1
       ssh_exec_wait(session = connection, command = "sleep 5")
       ssh_exec_wait(session = connection, command = paste(
         "sbatch ",
-        bash_file,
+        bash_file_sims,
         seed,
-        right_setup[setup_number,1],
-        right_setup[setup_number,2],
-        right_setup[setup_number,3],
-        right_setup[setup_number,4],
-        right_setup[setup_number,5],
-        right_setup[setup_number,6],
-        right_setup[setup_number,7],
-        right_setup[setup_number,8],
-        right_setup[setup_number,9],
-        right_setup[setup_number,10],
-        right_setup[setup_number,11],
-        right_setup[setup_number,12],
-        right_setup[setup_number,13],
-        right_setup[setup_number,14],
+        right_setup[setup_number, 1],
+        right_setup[setup_number, 2],
+        right_setup[setup_number, 3],
+        right_setup[setup_number, 4],
+        right_setup[setup_number, 5],
+        right_setup[setup_number, 6],
+        right_setup[setup_number, 7],
+        right_setup[setup_number, 8],
+        right_setup[setup_number, 9],
+        right_setup[setup_number, 10],
+        right_setup[setup_number, 11],
+        right_setup[setup_number, 12],
+        right_setup[setup_number, 13],
+        right_setup[setup_number, 14],
         partition,
         sep = " "
       ))
@@ -399,7 +399,7 @@ execute_next_setup <- function(
       ssh_exec_wait(session = connection, command = "sleep 5")
       ssh_exec_wait(session = connection, command = paste(
         "sbatch ",
-        bash_file,
+        bash_file_sims,
         seed,
         right_setup[setup_number,1],
         right_setup[setup_number,2],
@@ -414,6 +414,73 @@ execute_next_setup <- function(
       ))
     }
   }
+
+  # Submit corresponding ML jobs # NO OTHER JOBS MUST RUN; TO FIX, add check by jobname
+  if (complete_analysis) {
+    job_ids <- sort(check_jobs()$job_ids) #nolint
+    if (island_ontogeny == "beta") {
+      ssh_exec_wait(session = connection, command = "sleep 5")
+      bash_file_ML <- file.path(
+        project_name,
+        paste0(project_name, "_ML.bash")
+      )
+
+      for (setup_number in seq_along(right_setup[, 1])) {
+        seed <- 1
+        ssh_exec_wait(session = connection, command = "sleep 5")
+        ssh_exec_wait(session = connection, command = paste(
+          "sbatch ",
+          bash_file_ML,
+          seed,
+          right_setup[setup_number, 1],
+          right_setup[setup_number, 2],
+          right_setup[setup_number, 3],
+          right_setup[setup_number, 4],
+          right_setup[setup_number, 5],
+          right_setup[setup_number, 6],
+          right_setup[setup_number, 7],
+          right_setup[setup_number, 8],
+          right_setup[setup_number, 9],
+          right_setup[setup_number, 10],
+          right_setup[setup_number, 11],
+          right_setup[setup_number, 12],
+          right_setup[setup_number, 13],
+          right_setup[setup_number, 14],
+          partition,
+          job_ids, # must match correct sim file
+          sep = " "
+        ))
+      }
+    } else if (island_ontogeny == "const") {
+
+      ssh_exec_wait(session = connection, command = "sleep 5")
+      bash_file_ML <- file.path(
+        project_name,
+        paste0(project_name, "_0_ML.bash"))
+
+      for (setup_number in seq_along(right_setup[,1])) {
+        seed <- 1
+        ssh_exec_wait(session = connection, command = "sleep 5")
+        ssh_exec_wait(session = connection, command = paste(
+          "sbatch ",
+          bash_file_ML,
+          seed,
+          right_setup[setup_number, 1],
+          right_setup[setup_number, 2],
+          right_setup[setup_number, 3],
+          right_setup[setup_number, 4],
+          right_setup[setup_number, 5],
+          right_setup[setup_number, 6],
+          right_setup[setup_number, 7],
+          right_setup[setup_number, 8],
+          partition,
+          job_ids, # must match correct sim file
+          sep = " "
+        ))
+      }
+    }
+  }
+  # Close ssh connection
   ssh_disconnect(connection); gc()
 }
 
@@ -429,7 +496,10 @@ check_jobs <- function(account = get_p_number()) {
   if (!require(ssh)) {install.packages("ssh")}
   connection <- ssh_connect(cluster_address)
 
-  jobs <- capture.output(ssh_exec_wait(session = connection, command = "squeue -u $USER --long"))
+  jobs <- capture.output(ssh_exec_wait(
+    session = connection,
+    command = "squeue -u $USER --long"
+  ))
 
   job_ids <- job_names <- c()
   for (i in 3:(length(jobs) - 1)) {
@@ -448,146 +518,150 @@ check_jobs <- function(account = get_p_number()) {
   ))
 
   ssh_disconnect(connection); gc()
-  out <- list(jobs = jobs, job_ids = as.numeric(job_ids), sshare_output = sshare_output)
+  out <- list(
+    jobs = jobs,
+    job_ids = as.numeric(job_ids),
+    sshare_output = sshare_output
+  )
   return(out)
 }
 
 
-  #' @title Download the results to the results folder of the project
-  #' @author Giovanni Laudanno
-  #' @description Download the results to the results folder of the project
-  #' @inheritParams default_params_doc
-  #' @return nothing
-  download_results <- function(
-    project_name = get_project_name()
-  ) {
+#' @title Download the results to the results folder of the project
+#' @author Giovanni Laudanno
+#' @description Download the results to the results folder of the project
+#' @inheritParams default_params_doc
+#' @return nothing
+download_results <- function(
+  project_name = get_project_name()
+) {
 
-    project_folder <- get_project_folder(project_name)
-    remote_results_folder <- file.path(get_project_name(), "results")
-    local_results_folder <- file.path(project_folder, "results")
-    testit::assert(dir.exists(local_results_folder))
+  project_folder <- get_project_folder(project_name)
+  remote_results_folder <- file.path(get_project_name(), "results")
+  local_results_folder <- file.path(project_folder, "results")
+  testit::assert(dir.exists(local_results_folder))
 
-    # download files
-    if (!require(ssh)) {install.packages("ssh")}
-    accounts <- get_p_number()
-    for (account in accounts) {
-      cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
-      connection <- ssh_connect(cluster_address)
+  # download files
+  if (!require(ssh)) {install.packages("ssh")}
+  accounts <- get_p_number()
+  for (account in accounts) {
+    cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
+    connection <- ssh_connect(cluster_address)
 
-      system.time(
-        scp_download(
-          session = connection,
-          files = paste0(remote_results_folder, "/*"),
-          to = local_results_folder
-        )
+    system.time(
+      scp_download(
+        session = connection,
+        files = paste0(remote_results_folder, "/*"),
+        to = local_results_folder
       )
-      ssh_disconnect(connection); gc()
-    }
-    return()
+    )
+    ssh_disconnect(connection); gc()
+  }
+  return()
+}
+
+#' @title Download the data to the data folder of the project
+#' @author Giovanni Laudanno
+#' @description Download the data to the results folder of the project
+#' @inheritParams default_params_doc
+#' @return nothing
+download_data <- function(
+  project_name = get_project_name()
+) {
+
+  project_folder <- get_project_folder(project_name)
+  remote_data_folder <- file.path(get_project_name(), "data")
+  local_data_folder <- file.path(project_folder, "data")
+  testit::assert(dir.exists(local_data_folder))
+
+  # download files
+  if (!require(ssh)) {install.packages("ssh")}
+  accounts <- get_p_number()
+  for (account in accounts) {
+    cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
+    connection <- ssh_connect(cluster_address)
+
+    system.time(
+      scp_download(
+        session = connection,
+        files = paste0(remote_data_folder, "/*"),
+        to = local_data_folder
+      )
+    )
+    ssh_disconnect(connection); gc()
+  }
+  return()
+}
+
+load_DAISIE_data <- function() {
+  project_name <- get_project_name()
+  project_folder <- get_project_folder(project_name)
+  platform <- .Platform$OS.type
+
+  if (platform == "windows") {
+    data_folder <- local_data_folder <- file.path(project_folder, "data")
+    testit::assert(dir.exists(data_folder))
+  } else {
+    data_folder <- file.path(get_project_name(), "data")
   }
 
-  #' @title Download the data to the data folder of the project
-  #' @author Giovanni Laudanno
-  #' @description Download the data to the results folder of the project
-  #' @inheritParams default_params_doc
-  #' @return nothing
-  download_data <- function(
-    project_name = get_project_name()
-  ) {
+  files <- list.files(data_folder)
+  for (file in seq_along(files)) {
+    load(file = file.path(local_data_folder, files[file]))
+    assign(paste0("sim_", file), out) #nolint
+    assign(paste0("args_", file), args) #nolint
+  }
+}
 
-    project_folder <- get_project_folder(project_name)
-    remote_data_folder <- file.path(get_project_name(), "data")
-    local_data_folder <- file.path(project_folder, "data")
-    testit::assert(dir.exists(local_data_folder))
+#' Calculate means and medians of parameter estimates
+#'
+#' @return list with median of indep clades
+#' @export
+#'
+#' @examples
+get_summary_stats <- function() {
+  project_name <- get_project_name()
+  project_folder <- get_project_folder(project_name)
+  platform <- .Platform$OS.type
 
-    # download files
-    if (!require(ssh)) {install.packages("ssh")}
-    accounts <- get_p_number()
-    for (account in accounts) {
-      cluster_address <- paste0(account, "@peregrine.hpc.rug.nl")
-      connection <- ssh_connect(cluster_address)
-
-      system.time(
-        scp_download(
-          session = connection,
-          files = paste0(remote_data_folder, "/*"),
-          to = local_data_folder
-        )
-      )
-      ssh_disconnect(connection); gc()
-    }
-    return()
+  if (platform == "windows") {
+    data_folder <- local_data_folder <- file.path(project_folder, "data")
+    testit::assert(dir.exists(data_folder))
+  } else {
+    data_folder <- file.path(get_project_name(), "data")
   }
 
-  load_DAISIE_data <- function() {
-    project_name <- get_project_name()
-    project_folder <- get_project_folder(project_name)
-    platform <- .Platform$OS.type
-
-    if (platform == "windows") {
-      data_folder <- local_data_folder <- file.path(project_folder, "data")
-      testit::assert(dir.exists(data_folder))
-    } else {
-      data_folder <- file.path(get_project_name(), "data")
-    }
-
-    files <- list.files(data_folder)
-    for (file in seq_along(files)) {
-      load(file = file.path(local_data_folder, files[file]))
-      assign(paste0("sim_", file), out) #nolint
-      assign(paste0("args_", file), args) #nolint
-    }
+  files <- list.files(data_folder)
+  for (file in seq_along(files)) {
+    load(
+      file = file.path(local_data_folder, files[file])
+    )
+    assign(paste0("sim_", file), out) #nolint
+    assign(paste0("args_", file), args) #nolint
   }
 
-  #' Calculate means and medians of parameter estimates
-  #'
-  #' @return list with median of indep clades
-  #' @export
-  #'
-  #' @examples
-  get_summary_stats <- function() {
-    project_name <- get_project_name()
-    project_folder <- get_project_folder(project_name)
-    platform <- .Platform$OS.type
-
-    if (platform == "windows") {
-      data_folder <- local_data_folder <- file.path(project_folder, "data")
-      testit::assert(dir.exists(data_folder))
-    } else {
-      data_folder <- file.path(get_project_name(), "data")
-    }
-
-    files <- list.files(data_folder)
-    for (file in seq_along(files)) {
-      load(
-        file = file.path(local_data_folder, files[file])
-      )
-      assign(paste0("sim_", file), out) #nolint
-      assign(paste0("args_", file), args) #nolint
-    }
-
+  # Calc median of indep clades
+  datasets <- ls(pattern = "sim")
+  n_indep_clade <- c()
+  medians_indep_clades <- c()
+  medians_n_spec_island <- c()
+  n_spec_island <- c()
+  for (dataset_id in seq_along(datasets)) {
     # Calc median of indep clades
-    datasets <- ls(pattern = "sim")
-    n_indep_clade <- c()
-    medians_indep_clades <- c()
-    medians_n_spec_island <- c()
-    n_spec_island <- c()
-    for (dataset_id in seq_along(datasets)) {
-      # Calc median of indep clades
-      for (repl in seq_along(get(datasets[dataset_id]))) {
-        n_indep_clade[repl] <- # Count number of indep clades using last line
-          get(datasets[dataset_id])[[repl]][[1]]$stt_all[
-            nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all), 5]
-      }
-
-      # Calc median of number of species
-      for (repl in seq_along(get(datasets[dataset_id]))) {
-        n_spec_island[repl] <- sum(get(datasets[dataset_id])[[repl]][[1]]$stt_all[
-          nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all),2:4])
-      }
-      medians_indep_clades[dataset_id] <- median(n_indep_clade)
-      medians_n_spec_island[dataset_id] <- median(n_spec_island)
+    for (repl in seq_along(get(datasets[dataset_id]))) {
+      n_indep_clade[repl] <- # Count number of indep clades using last line
+        get(datasets[dataset_id])[[repl]][[1]]$stt_all[
+          nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all), 5]
     }
-    return(list(medians_indep_clades, medians_n_spec_island))
+
+    # Calc median of number of species
+    for (repl in seq_along(get(datasets[dataset_id]))) {
+      n_spec_island[repl] <- sum(get(datasets[dataset_id])[[repl]][[1]]$stt_all[
+        nrow(get(datasets[dataset_id])[[repl]][[1]]$stt_all),2:4])
+    }
+    medians_indep_clades[dataset_id] <- median(n_indep_clade)
+    medians_n_spec_island[dataset_id] <- median(n_spec_island)
   }
+  return(list(medians_indep_clades, medians_n_spec_island))
+}
 
