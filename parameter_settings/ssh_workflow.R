@@ -366,7 +366,7 @@ execute_next_setup <- function(
     )
   }
   ssh_exec_wait(session = connection, command = paste0("cat ", bash_file_sims))
-
+  print("\n")
   if (island_ontogeny == "beta") {
     for (setup_number in seq_along(right_setup[, 1])) {
       seed <- 1
@@ -394,21 +394,21 @@ execute_next_setup <- function(
       ))
     }
   } else {
-    for (setup_number in seq_along(right_setup[,1])) {
+    for (setup_number in seq_along(right_setup[, 1])) {
       seed <- 1
       ssh_exec_wait(session = connection, command = "sleep 5")
       ssh_exec_wait(session = connection, command = paste(
         "sbatch ",
         bash_file_sims,
         seed,
-        right_setup[setup_number,1],
-        right_setup[setup_number,2],
-        right_setup[setup_number,3],
-        right_setup[setup_number,4],
-        right_setup[setup_number,5],
-        right_setup[setup_number,6],
-        right_setup[setup_number,7],
-        right_setup[setup_number,8],
+        right_setup[setup_number, 1],
+        right_setup[setup_number, 2],
+        right_setup[setup_number, 3],
+        right_setup[setup_number, 4],
+        right_setup[setup_number, 5],
+        right_setup[setup_number, 6],
+        right_setup[setup_number, 7],
+        right_setup[setup_number, 8],
         partition,
         sep = " "
       ))
@@ -417,7 +417,9 @@ execute_next_setup <- function(
 
   # Submit corresponding ML jobs # NO OTHER JOBS MUST RUN; TO FIX, add check by jobname
   if (complete_analysis) {
+    ssh_exec_wait(session = connection, command = "sleep 5")
     job_ids <- sort(check_jobs()$job_ids) #nolint
+    print(job_ids)
     if (island_ontogeny == "beta") {
       ssh_exec_wait(session = connection, command = "sleep 5")
       bash_file_ML <- file.path(
@@ -447,7 +449,7 @@ execute_next_setup <- function(
           right_setup[setup_number, 13],
           right_setup[setup_number, 14],
           partition,
-          job_ids, # must match correct sim file
+          job_ids[setup_number], # must match correct sim file
           sep = " "
         ))
       }
@@ -458,7 +460,7 @@ execute_next_setup <- function(
         project_name,
         paste0(project_name, "_0_ML.bash"))
 
-      for (setup_number in seq_along(right_setup[,1])) {
+      for (setup_number in seq_along(right_setup[, 1])) {
         seed <- 1
         ssh_exec_wait(session = connection, command = "sleep 5")
         ssh_exec_wait(session = connection, command = paste(
@@ -474,7 +476,7 @@ execute_next_setup <- function(
           right_setup[setup_number, 7],
           right_setup[setup_number, 8],
           partition,
-          job_ids, # must match correct sim file
+          job_ids[setup_number], # must match correct sim file
           sep = " "
         ))
       }
