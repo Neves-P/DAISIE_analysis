@@ -534,10 +534,54 @@ load_DAISIE_data <- function() {
   files <- list.files(data_folder)
   for (file in seq_along(files)) {
     load(file = file.path(local_data_folder, files[file]))
-    assign(paste0("sim_", file), out) #nolint
+    assign(files[file], out) #nolint
     assign(paste0("args_", file), args) #nolint
   }
 }
+
+
+#' Title
+#'
+#' @param sim_file_name
+#' @param ontogeny
+#'
+#' @return
+#' @export
+#'
+#' @examples
+load_DAISIE_results <- function(sim_file_name, ontogeny) {
+  project_name <- get_project_name()
+  project_folder <- get_project_folder(project_name)
+
+  platform <- .Platform$OS.type
+
+  if (ontogeny) {
+    ont_path <- "ont"
+  } else {
+    ont_path <- "no_ont"
+  }
+
+  if (platform == "windows") {
+    results_folder <- local_data_folder <- file.path(project_folder, "results", ont_path)
+    testit::assert(dir.exists(results_folder))
+  } else {
+    results_folder <- file.path(get_project_name(), "results", ont_path)
+  }
+
+  result_files <- list.files(results_folder)
+
+  match_sims_to_load <- paste0("res-", substring(sim_file_name, 5))
+  files_to_load <-
+    result_files[grepl(tools::file_path_sans_ext(match_sims_to_load), result_files)]
+  final_list <- list()
+  for (file in seq_along(files_to_load)) {
+    load(file.path(results_folder, files_to_load[file]))
+    assign(paste("result", file, sep = "_"), out_results) #nolint
+    final_list <- rbind(final_list, do.call(rbind.data.frame, get(paste("result", file, sep = "_"))))
+  }
+  return(final_list)
+}
+
 
 #' Calculate means and medians of parameter estimates
 #'
