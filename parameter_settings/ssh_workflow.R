@@ -691,9 +691,8 @@ check_jobs <- function(account = get_p_number()) {
 #' @description Download the results to the results folder of the project
 #' @inheritParams default_params_doc
 #' @return nothing
-download_results <- function(
-  project_name = get_pkg_name()
-) {
+download_results <- function(project_name = get_pkg_name(),
+                             remove_remote = TRUE) {
 
   project_folder <- get_project_folder(project_name)
   remote_results_folder <- file.path(get_pkg_name(), "results")
@@ -719,15 +718,17 @@ download_results <- function(
       )
     )
 
-    if (n_running_jobs == 0) {
-      ssh_exec_wait(
-        session = connection,
-        command = paste0("rm -rf ", remote_results_folder)
-      )
-      ssh_exec_wait(
-        session = connection,
-        command = 'ls | find . -name "slurm*" | xargs rm'
-      )
+    if (remove_remote) {
+      if (n_running_jobs == 0) {
+        ssh_exec_wait(
+          session = connection,
+          command = paste0("rm -rf ", remote_results_folder)
+        )
+        ssh_exec_wait(
+          session = connection,
+          command = 'ls | find . -name "slurm*" | xargs rm'
+        )
+      }
     }
     ssh_disconnect(connection); gc()
   }

@@ -1,0 +1,33 @@
+
+
+# 3 pilot job submission
+
+
+
+save(new_experiments, file = "pilot_study_pars.RData")
+
+execute_next_setup(
+  project_name = get_project_name(),
+  account = get_p_number(),
+  download_files = FALSE,
+  partition = "gelifes",
+  time = 6,
+  M = 1000,
+  lac = unique(new_experiments$lac),
+  mu = unique(new_experiments$mu),
+  K = new_experiments$K,
+  gam = unique(new_experiments$gam),
+  laa = unique(new_experiments$laa),
+  island_ontogeny = "beta",
+  replicates = 1000,
+  mu_min = unique(new_experiments$mu_min),
+  mu_max = unique(new_experiments$mu_max),
+  Amax = unique(new_experiments$Amax),
+  Apeak = unique(new_experiments$Apeak),
+  Asharpness = unique(new_experiments$Asharpness),
+  Atotalage = unique(new_experiments$Atotalage),
+  branch = "@develop",
+  max_sims = 100,
+  complete_analysis = TRUE
+)
+
