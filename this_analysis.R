@@ -33,7 +33,7 @@ DAISIE_calc_sumstats_pcrates(
   island_ontogeny = 2
 )
 
-#' Title
+#' Load DAISIE results
 #'
 #' @param sim_file_name
 #'
