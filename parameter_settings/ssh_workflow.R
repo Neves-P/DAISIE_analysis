@@ -327,7 +327,7 @@ execute_next_setup <- function(
   if (island_ontogeny == "beta") {
     for (setup_number in seq_along(right_setup[, 1])) {
       seed <- 1
-      ssh_exec_wait(session = connection, command = "sleep 7")
+      ssh_exec_wait(session = connection, command = "sleep 2")
       ssh_exec_wait(session = connection, command = paste(
         "sbatch ",
         bash_file_sims,
