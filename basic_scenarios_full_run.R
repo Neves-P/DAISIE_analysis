@@ -66,7 +66,7 @@ execute_next_setup(
   account = get_p_number(),
   download_files = FALSE,
   partition = "gelifes",
-  time = 6,
+  time = 7,
   M = 1000,
   lac = unique(new_experiments$lac),
   mu = unique(new_experiments$mu),

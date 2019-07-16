@@ -31,6 +31,4 @@ DAISIE_plot_comparison_stts(
   plot_lists_simulations = parsed_initial,
   plot_lists_simulations_MLE = parsed_final_list,
   type = "all_species",
-  
 )
-

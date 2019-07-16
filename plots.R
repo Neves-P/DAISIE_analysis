@@ -1,7 +1,9 @@
+
+
 # Plot rates of the runs
 library(gridExtra)
 library(DAISIE)
-args[11]
+
 pars <- c(time = args[2], lac = args[4], K = args[6], gam = args[7], laa = args[8])
 Apars <- create_area_params(max_area = args[12], proportional_peak_t = args[13], peak_sharpness = args[14], total_island_age = args[15])
 Epars <- c(args[10], args[11])

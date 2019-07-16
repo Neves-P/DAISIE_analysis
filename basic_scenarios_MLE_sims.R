@@ -185,6 +185,3 @@ for (i in 1:10) {
   )
 }
 
-
-# TEST
-out1 <- DAISIE::DAISIE_sim(time = 6, M = 1000, pars = c(unique(new_experiments$lac), 1, new_experiments$K[1], unique(new_experiments$gam), unique(new_experiments$laa)), replicates = 10, island_ontogeny = "beta", Apars = DAISIE::create_area_params(unique(new_experiments$Amax), unique(new_experiments$Apeak), unique(new_experiments$Asharpness), unique(new_experiments$Atotalage)), Epars = c(unique(new_experiments$mu_min), 15))
