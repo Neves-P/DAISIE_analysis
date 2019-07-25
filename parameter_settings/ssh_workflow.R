@@ -158,7 +158,8 @@ experiment_setup <- function(
   Amax = c(13500),
   Apeak = c(0.1),
   Asharpness = c(1),
-  Atotalage = c(9)
+  Atotalage = c(9),
+  divdepmodel = 1
 ) {
   if (island_ontogeny == "beta" || island_ontogeny == 2) {
     setups <- expand.grid(
@@ -175,7 +176,8 @@ experiment_setup <- function(
       Amax,
       Apeak,
       Asharpness,
-      Atotalage
+      Atotalage,
+      divdepmodel
     )
     colnames(setups) <- c(
       "time",
@@ -191,7 +193,8 @@ experiment_setup <- function(
       "Amax",
       "Apeak",
       "Asharpness",
-      "Atotalage"
+      "Atotalage",
+      "divdepmodel"
     )
   } else {
     setups <- expand.grid(
@@ -202,7 +205,8 @@ experiment_setup <- function(
       K,
       gam,
       laa,
-      replicates
+      replicates,
+      divdepmodel
     )
     colnames(setups) <- c(
       "time",
@@ -212,7 +216,8 @@ experiment_setup <- function(
       "K",
       "gam",
       "laa",
-      "replicates"
+      "replicates",
+      "divdepmodel"
     )
   }
   setups
@@ -237,6 +242,7 @@ execute_next_setup <- function(
   K = c(100 / 13500, 30 / 13500, 10 / 13500),
   gam = c(0.001),
   laa = c(1),
+  divdepmodel = 1,
   island_ontogeny = "beta",
   replicates = 1000,
   mu_min = 0.1,
@@ -246,7 +252,8 @@ execute_next_setup <- function(
   Asharpness = c(1),
   Atotalage = c(9),
   complete_analysis = FALSE,
-  branch = "@develop"
+  branch = "@develop",
+  force = FALSE
 ) {
 
   if (!(partition == "gelifes" || partition == "regular" || partition == "short")) {
@@ -278,7 +285,8 @@ execute_next_setup <- function(
     Amax = Amax,
     Apeak = Apeak,
     Asharpness = Asharpness,
-    Atotalage = Atotalage
+    Atotalage = Atotalage,
+    divdepmodel = divdepmodel
   )
 
   if (is.null(project_folder)) {
@@ -301,7 +309,7 @@ execute_next_setup <- function(
   ssh_exec_wait(session = connection, command = paste0(
     "chmod +x ", file.path(project_name, "install_packages.bash")
   ))
-  ssh_exec_wait(session = connection, command = paste0(
+  ssh_exec_wait(session = connection, command = paste(paste0(
     "./", file.path(
       project_name,
       "install_packages.bash"),
@@ -309,7 +317,7 @@ execute_next_setup <- function(
     project_name,
     branch,
     "'"
-  ))
+  ), force))
   # Submit simulation jobs
   if (island_ontogeny == "beta" || island_ontogeny == 2) {
     bash_file_sims <- file.path(
@@ -346,6 +354,7 @@ execute_next_setup <- function(
         right_setup[setup_number, 12],
         right_setup[setup_number, 13],
         right_setup[setup_number, 14],
+        right_setup[setup_number, 15],
         partition,
         sep = " "
       ))
@@ -366,6 +375,7 @@ execute_next_setup <- function(
         right_setup[setup_number, 6],
         right_setup[setup_number, 7],
         right_setup[setup_number, 8],
+        right_setup[setup_number, 9],
         partition,
         sep = " "
       ))
@@ -374,6 +384,9 @@ execute_next_setup <- function(
 
   # Submit corresponding ML jobs # NO OTHER JOBS MUST RUN; TO FIX, add check by jobname
   if (complete_analysis) {
+    if (right_setup[setup_number, 15] == "IW") {
+      stop("Chained jobs are not available for the IW model")
+    }
     ssh_exec_wait(session = connection, command = "sleep 5")
     job_ids <- sort(check_jobs()$job_ids) #nolint
     print(job_ids)
