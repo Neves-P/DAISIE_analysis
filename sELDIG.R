@@ -53,10 +53,10 @@ get_tree_directory <- function(directory = "sELDIG") {
 
 get_newick_trees <- function(scenario = "CS",
                              tree_directory = get_tree_directory()) {
-  scenario_trees <- file.path(get_tree_directory(), scenario)
 
   parameters_data <- data.frame(model = NA, simID = NA, lac = NA, mu = NA, k = NA, gam = NA, laa = NA, dd = NA)
-
+  large_trees <- data.frame(id = NA)
+  scenario_trees <- file.path(get_tree_directory(), scenario)
   for (n_sim in seq_along(list.files(scenario_trees))) {
     if (n_sim == 180 && scenario == "IW") {
       next()
@@ -141,10 +141,21 @@ get_newick_trees <- function(scenario = "CS",
     tree <- DDD::brts2phylo(out[[1]][[2]]$branching_times)
     parameters <- data.frame(model = "etienne", simID = tree_code, lac = args[4], mu = args[5], k = args[6], gam = args[7], laa = args[8], dd = scenario)
     parameters_data <- rbind(parameters_data, parameters)
-    ape::write.tree(phy = tree,file = paste0("newick_trees/", tree_name, ".tre"))
+    ape::write.tree(phy = tree, file = paste0("newick_trees/", tree_name, ".tre"))
+
+    if (length(tree$tip.label) >= 20) {
+      large_trees <- rbind(large_trees, tree_name)
+    }
   }
   parameters_data <- parameters_data[-1, ]
-  write.table(parameters_data, file = "parameters_file.csv", append = TRUE, row.names = FALSE, sep = ",", col.names = FALSE)
-}
-# DAISIE::DAISIE_plot_(out[[1]])
+  large_trees <- large_trees[-1, ]
 
+  if (scenario == "CS") {
+    write.table(large_trees, file = "large_trees.csv", append = TRUE, row.names = FALSE, sep = ",")
+    write.table(parameters_data, file = "parameters_file.csv", append = TRUE, row.names = FALSE, sep = ",") # must be changed (col names)
+  } else {
+    write.table(large_trees, file = "large_trees.csv", append = TRUE, row.names = FALSE, sep = ",", col.names = FALSE)
+    write.table(parameters_data, file = "parameters_file.csv", append = TRUE, row.names = FALSE, sep = ",", col.names = FALSE) # must be changed (col names)
+  }
+
+}
