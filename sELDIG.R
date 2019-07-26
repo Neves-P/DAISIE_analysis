@@ -51,21 +51,54 @@ get_tree_directory <- function(directory = "sELDIG") {
   tree_directory
 }
 
-get_newick_trees <- function(scenario = "CS",
-                             tree_directory = get_tree_directory()) {
+substrRight <- function(x, n){
+  string <- substr(x, nchar(x) - n + 1, nchar(x))
+  string
+}
 
-  parameters_data <- data.frame(model = NA, simID = NA, lac = NA, mu = NA, k = NA, gam = NA, laa = NA, dd = NA)
+get_newick_trees <- function(tree_directory = get_tree_directory()) {
+
+
+  parameters_data <- data.frame(
+    model = NA,
+    simID = NA,
+    lac = NA,
+    mu = NA,
+    k = NA,
+    gam = NA,
+    laa = NA,
+    dd = NA
+  )
   large_trees <- data.frame(id = NA)
-  scenario_trees <- file.path(get_tree_directory(), scenario)
-  for (n_sim in seq_along(list.files(scenario_trees))) {
-    if (n_sim == 180 && scenario == "IW") {
-      next()
-    }
-    if (n_sim == 182 && scenario == "IW") {
-      next()
-    }
-    load(file.path(scenario_trees, list.files(scenario_trees)[n_sim]))
+  set.seed(1)
 
+  for (n_sim in seq_along(list.files(tree_directory))) {
+    if(exists(x = "args")) {
+      rm(args)
+      rm(out)
+    }
+    scenario_code <- substr(substrRight(list.files(tree_directory)[n_sim], 7), 1, stop = 1)
+    if (scenario_code == "0" || scenario_code == "1") {
+      scenario <- "CS"
+    } else if(scenario_code == "2") {
+      scenario <- "IW"
+    } else {
+      stop("invalid scenario in sim file")
+    }
+
+
+    # if (n_sim == 180 && scenario == "IW") {
+    #   next()
+    # }
+    # if (n_sim == 182 && scenario == "IW") {
+    #   next()
+    # }
+    try(
+      load(file.path(tree_directory, list.files(tree_directory)[n_sim]))
+    )
+    if(!exists("out")) {
+      next()
+    }
     if (args[4] == 0.9) {
       lac <- "1"
     } else if (args[4] == 1) {
@@ -88,6 +121,8 @@ get_newick_trees <- function(scenario = "CS",
       k <- "2"
     } else if (args[6] == Inf) {
       k <- "3"
+    } else if (args[6] == 30) {
+      k <- "4"
     }
 
     if (args[7] == 0.0001) {
@@ -133,29 +168,34 @@ get_newick_trees <- function(scenario = "CS",
     )
 
     print(n_sim)
-    if (out[[1]][[1]]$not_present == 1000) {
-      next()
-    }
+    # if (out[[1]][[1]]$not_present == 1000) {
+    #   next()
+    # }
 
     print(tree_name)
-    tree <- DDD::brts2phylo(out[[1]][[2]]$branching_times)
+
+    try(
+      tree <- DDD::brts2phylo(out[[1]][[2]]$branching_times)
+    )
+
+
     parameters <- data.frame(model = "etienne", simID = tree_code, lac = args[4], mu = args[5], k = args[6], gam = args[7], laa = args[8], dd = scenario)
     parameters_data <- rbind(parameters_data, parameters)
     ape::write.tree(phy = tree, file = paste0("newick_trees/", tree_name, ".tre"))
-
+    cat("tree size:", length(tree$tip.label), "\n")
     if (length(tree$tip.label) >= 20) {
       large_trees <- rbind(large_trees, tree_name)
+      cat("large tree size:", length(tree$tip.label), "\n")
     }
   }
   parameters_data <- parameters_data[-1, ]
   large_trees <- large_trees[-1, ]
 
-  if (scenario == "CS") {
+  # if (scenario == "CS") {
     write.table(large_trees, file = "large_trees.csv", append = TRUE, row.names = FALSE, sep = ",")
     write.table(parameters_data, file = "parameters_file.csv", append = TRUE, row.names = FALSE, sep = ",") # must be changed (col names)
-  } else {
-    write.table(large_trees, file = "large_trees.csv", append = TRUE, row.names = FALSE, sep = ",", col.names = FALSE)
-    write.table(parameters_data, file = "parameters_file.csv", append = TRUE, row.names = FALSE, sep = ",", col.names = FALSE) # must be changed (col names)
-  }
-
+  # } else {
+  #   write.table(large_trees, file = "large_trees.csv", append = TRUE, row.names = FALSE, sep = ",", col.names = FALSE)
+  #   write.table(parameters_data, file = "parameters_file.csv", append = TRUE, row.names = FALSE, sep = ",", col.names = FALSE) # must be changed (col names)
+  # }
 }
