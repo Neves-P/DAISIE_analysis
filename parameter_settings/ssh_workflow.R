@@ -532,24 +532,41 @@ download_data <- function(
   return()
 }
 
-load_DAISIE_data <- function() {
+load_DAISIE_data <- function(file_name = NULL, scenario = NULL) {
+  testit::assert(is.character(file_name) || is.null(file_name))
+  testit::assert(is.character(scenario) || is.null(scenario))
+
+
   project_name <- get_project_name()
   project_folder <- get_project_folder(project_name)
   platform <- .Platform$OS.type
 
+  # Get data folder
   if (platform == "windows") {
-    data_folder <- local_data_folder <- file.path(project_folder, "data")
+    if (!is.null(scenario)) {
+      data_folder <- local_data_folder <- file.path(project_folder, "data", scenario)
+    } else {
+      data_folder <- local_data_folder <- file.path(project_folder, "data")
+    }
     testit::assert(dir.exists(data_folder))
   } else {
     data_folder <- file.path(get_project_name(), "data")
   }
 
-  files <- list.files(data_folder)
-  for (file in seq_along(files)) {
-    load(file = file.path(local_data_folder, files[file]))
-    assign(files[file], out) #nolint
-    assign(paste0("args_", file), args) #nolint
+  # Load file(s)
+  if (is.null(file_name)) {
+    files <- list.files(data_folder)
+    for (file in seq_along(files)) {
+      load(file = file.path(local_data_folder, files[file]))
+      assign(files[file], out) #nolint
+      assign(paste0("args_", files[[file]]), args) #nolint
+    }
+  } else {
+    load(file = file.path(local_data_folder, file_name))
   }
+  simulations_output <- mget(ls(pattern = "sim"))
+  args_output <- mget(ls(pattern = "args"))
+  return(list(simulations_output, args_output))
 }
 
 
