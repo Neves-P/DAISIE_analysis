@@ -544,9 +544,16 @@ load_DAISIE_data <- function(file_name = NULL, scenario = NULL) {
   # Get data folder
   if (platform == "windows") {
     if (!is.null(scenario)) {
-      data_folder <- local_data_folder <- file.path(project_folder, "data", scenario)
+      data_folder <- local_data_folder <- file.path(
+        project_folder,
+        "data",
+        scenario
+      )
     } else {
-      data_folder <- local_data_folder <- file.path(project_folder, "data")
+      data_folder <- local_data_folder <- file.path(
+        project_folder,
+        "data"
+      )
     }
     testit::assert(dir.exists(data_folder))
   } else {
@@ -564,7 +571,7 @@ load_DAISIE_data <- function(file_name = NULL, scenario = NULL) {
   } else {
     load(file = file.path(local_data_folder, file_name))
   }
-  simulations_output <- mget(ls(pattern = "sim"))
+  simulations_output <- mget(ls(pattern = "out"))
   args_output <- mget(ls(pattern = "args"))
   return(list(simulations_output, args_output))
 }
