@@ -388,7 +388,7 @@ execute_next_setup <- function(
       stop("Chained jobs are not available for the IW model")
     }
     ssh_exec_wait(session = connection, command = "sleep 5")
-    job_ids <- sort(check_jobs()$job_ids) #nolint
+    job_ids <- sort(check_jobs()$job_ids) # nolint
     print(job_ids)
     if (island_ontogeny == "beta") {
       ssh_exec_wait(session = connection, command = "sleep 5")
@@ -565,13 +565,19 @@ load_DAISIE_data <- function(file_name = NULL, scenario = NULL) {
     files <- list.files(data_folder)
     for (file in seq_along(files)) {
       load(file = file.path(local_data_folder, files[file]))
-      assign(files[file], out) #nolint
-      assign(paste0("args_", files[[file]]), args) #nolint
+      assign(paste0("output_", files[file]), out) # nolint
+      assign(paste0("args_", files[[file]]), args) # nolint
     }
+    # Simulation output when file name is unknown
+  simulations_output <- mget(ls(pattern = "output"))
   } else {
+
     load(file = file.path(local_data_folder, file_name))
+
+    # Simulation output when file name is known
+    simulations_output <- mget(ls(pattern = "out"))
   }
-  simulations_output <- mget(ls(pattern = "out"))
+
   args_output <- mget(ls(pattern = "args"))
   return(list(simulations_output, args_output))
 }
