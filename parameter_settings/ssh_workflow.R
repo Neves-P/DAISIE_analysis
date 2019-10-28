@@ -113,7 +113,8 @@ upload_cluster_scripts <- function(
     # folder structure
     project_folder <- get_project_folder(project_name)
     remote_project_folder <- file.path(project_name)
-    local_cluster_folder <- file.path(project_folder, "cluster_scripts")
+    local_cluster_folder <- file.path(project_folder)
+    # local_cluster_folder <- file.path(project_folder, "cluster_scripts")
     testit::assert(dir.exists(local_cluster_folder))
 
     ssh_exec_wait(connection, command = paste0("mkdir -p ", project_name))

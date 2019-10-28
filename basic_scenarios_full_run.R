@@ -85,3 +85,33 @@ execute_next_setup(
   max_sims = 100,
   complete_analysis = TRUE
 )
+
+
+
+
+#21/10
+execute_next_setup(
+  project_name = project_name,
+  account = account,
+  download_files = FALSE,
+  partition = partition,
+  time = unique(pilot_study_parameters$time),
+  M = unique(pilot_study_parameters$M),
+  lac = unique(pilot_study_parameters$lac),
+  mu = unique(pilot_study_parameters$mu),
+  K = unique(pilot_study_parameters$K),
+  gam = unique(pilot_study_parameters$gam),
+  laa = unique(pilot_study_parameters$laa),
+  divdepmodel = divdepmodel,
+  island_ontogeny = island_ontogeny,
+  replicates = 1,
+  mu_min = unique(pilot_study_parameters$mu_min),
+  mu_max = unique(pilot_study_parameters$mu_max, 0.2, 5),
+  Amax = unique(pilot_study_parameters$Amax),
+  Apeak = unique(pilot_study_parameters$Apeak),
+  Asharpness = unique(pilot_study_parameters$Asharpness),
+  Atotalage = unique(pilot_study_parameters$Atotalage),
+  complete_analysis = TRUE,
+  branch = branch,
+  force = TRUE
+)
